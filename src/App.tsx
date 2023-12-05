@@ -17,6 +17,7 @@ import {
 import { verifyMessageSignatureRsv } from '@stacks/encryption';
 
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ExternalLink } from './external-link';
 import { ArrowRight } from 'lucide-react';
@@ -212,10 +213,11 @@ function App(): ReactElement {
                   {address} is {isKeyHolder ? '' : 'not'} a key holder
                 </p>
                 <div>
-                  <input
+                  <Input
                     type="text"
                     id="address"
                     name="address"
+                    onChange={(e) => setAddress(e.target.value)}
                     placeholder="Enter address"
                   />
                   <button onClick={() => checkIsKeyHolder(address)}>
