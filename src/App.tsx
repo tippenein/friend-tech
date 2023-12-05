@@ -1,9 +1,10 @@
 import React, { ReactElement, useState } from 'react';
-import { StacksMainnet } from '@stacks/network';
+import { StacksDevnet, StacksMainnet } from '@stacks/network';
 import {
   callReadOnlyFunction,
   getAddressFromPublicKey,
   uintCV,
+  standardPrincipalCV,
   cvToValue
 } from '@stacks/transactions';
 import {
@@ -25,6 +26,7 @@ function App(): ReactElement {
   const [address, setAddress] = useState('');
   const [isSignatureVerified, setIsSignatureVerified] = useState(false);
   const [hasFetchedReadOnly, setHasFetchedReadOnly] = useState(false);
+  const [isKeyHolder, setIsKeyHolder] = useState(false);
 
   // Initialize your app configuration and user session here
   const appConfig = new AppConfig(['store_write', 'publish_data']);
@@ -37,12 +39,12 @@ function App(): ReactElement {
   const authOptions = {
     userSession,
     appDetails: {
-      name: 'My App',
+      name: 'Friend.tech',
       icon: 'src/favicon.svg'
     },
     onFinish: (data: FinishedAuthData) => {
       // Handle successful authentication here
-      let userData = data.userSession.loadUserData();
+      const userData = data.userSession.loadUserData();
       setAddress(userData.profile.stxAddress.mainnet); // or .testnet for testnet
     },
     onCancel: () => {
@@ -51,6 +53,27 @@ function App(): ReactElement {
     redirectTo: '/'
   };
 
+  const checkIsKeyHolder = async (address: string) => {
+    const senderAddress = 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM';
+    const contractAddress = 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM';
+    const contractName = 'keys';
+    const functionName = 'is-keyholder';
+    const network = 'devnet';
+
+    const functionArgs = [
+      standardPrincipalCV(senderAddress),
+      standardPrincipalCV(address)
+    ];
+
+    await callReadOnlyFunction({
+      network,
+      contractAddress,
+      contractName,
+      functionName,
+      functionArgs,
+      senderAddress
+    });
+  };
   const connectWallet = () => {
     showConnect(authOptions);
   };
@@ -115,15 +138,9 @@ function App(): ReactElement {
     <div className="flex items-center justify-center min-h-screen">
       <div className="mx-auto max-w-2xl px-4">
         <div className="rounded-lg border bg-background p-8">
-          <h1 className="mb-2 text-lg font-semibold">Welcome to Hiro Hacks!</h1>
-          <p className="leading-normal text-muted-foreground">
-            This is an open source starter template built with{' '}
-            <ExternalLink href="https://docs.hiro.so/stacks.js/overview">
-              Stacks.js
-            </ExternalLink>{' '}
-            and a few integrations to help kickstart your app:
-          </p>
-
+          <h1 className="mb-2 text-lg font-semibold">
+            Welcome to Friend.tech!
+          </h1>
           <div className="mt-4 flex flex-col items-start space-y-2">
             {userSession.isUserSignedIn() ? (
               <div className="flex justify-between w-full">
@@ -188,6 +205,28 @@ function App(): ReactElement {
                 </Button>
               </div>
             )}
+
+            {userSession.isUserSignedIn() && (
+              <div>
+                <p>
+                  {address} is {isKeyHolder ? '' : 'not'} a key holder
+                </p>
+                <div>
+                  <input
+                    type="text"
+                    id="address"
+                    name="address"
+                    placeholder="Enter address"
+                  />
+                  <button onClick={() => checkIsKeyHolder(address)}>
+                    Check Key Holder
+                  </button>
+                  <div>
+                    <p>Key Holder Check Result: {isKeyHolder ? 'Yes' : 'No'}</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -199,25 +238,6 @@ function App(): ReactElement {
   //     <h1 className="text-xl">Friend.tech</h1>
   //     <div>
   //       <button onClick={disconnectWallet}>Disconnect Wallet</button>
-  //     </div>
-  //     <div>
-  //       <p>
-  //         {address} is {isKeyHolder ? '' : 'not'} a key holder
-  //       </p>
-  //       <div>
-  //         <input
-  //           type="text"
-  //           id="address"
-  //           name="address"
-  //           placeholder="Enter address"
-  //         />
-  //         <button onClick={() => checkIsKeyHolder(address)}>
-  //           Check Key Holder
-  //         </button>
-  //         <div>
-  //           <p>Key Holder Check Result: {isKeyHolder ? 'Yes' : 'No'}</p>
-  //         </div>
-  //       </div>
   //     </div>
   //     <div>
   //       Sign this message: <button onClick={signMessage}>Sign</button>
