@@ -71,10 +71,10 @@
             (ok true)
           )
           error
-          (err u2)
+          ERR_TRANSFER_FAIL
         )
       )
-      (err u1)
+      ERR_NO_SUPPLY
     )
   )
 )

@@ -2,50 +2,78 @@ import React, { ReactElement, useState } from 'react';
 import { StacksDevnet, StacksMainnet } from '@stacks/network';
 import {
   callReadOnlyFunction,
-  getAddressFromPublicKey,
   uintCV,
+  makeContractCall,
   standardPrincipalCV,
-  cvToValue
+  cvToValue,
+  getPublicKey
 } from '@stacks/transactions';
 import {
   AppConfig,
   FinishedAuthData,
   showConnect,
-  UserSession,
-  openSignatureRequestPopup
+  UserSession
 } from '@stacks/connect';
-import { verifyMessageSignatureRsv } from '@stacks/encryption';
 
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { truncateAddress } from './lib/utils';
+import { openSignatureRequestPopup } from '@stacks/connect';
+import { getPublicKeyFromPrivate, verifyMessageSignatureRsv } from '@stacks/encryption';
+import { StacksMocknet } from '@stacks/network';
+import { getAddressFromPublicKey } from '@stacks/transactions';
+import { bool } from '@stacks/transactions/dist/cl';
 
+const NETWORK = 'devnet';
+
+const CONTRACT_ADDRESS = 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM';
 function App(): ReactElement {
   const [address, setAddress] = useState('');
-  const [isSignatureVerified, setIsSignatureVerified] = useState(false);
-  const [hasFetchedReadOnly, setHasFetchedReadOnly] = useState(false);
   const [isKeyHolder, setIsKeyHolder] = useState(false);
+  const [openChat, setOpenChat] = useState(false);
 
   // Initialize your app configuration and user session here
   const appConfig = new AppConfig(['store_write', 'publish_data']);
   const userSession = new UserSession({ appConfig });
 
-  const message = 'Hello, Hiro Hacks!';
-  const network = new StacksMainnet();
+  const onChatLoginRequest = () => {
+    const message = 'Log in to chatroom';
+    const network = new StacksDevnet();
 
+    openSignatureRequestPopup({
+      message,
+      network,
+      onFinish: async ({ publicKey, signature }) => {
+        const verified = verifyMessageSignatureRsv({
+          message,
+          publicKey,
+          signature
+        });
+        if (verified) {
+          // The signature is verified, so now we can check if the user is a keyholder
+          const address = getAddressFromPublicKey(publicKey, network.version);
+          const isKeyHolder = await checkIsKeyHolder(address);
+          if (isKeyHolder) {
+            console.log('in!');
+            setOpenChat(true);
+          }
+        }
+      }
+    });
+  };
   // Define your authentication options here
   const authOptions = {
     userSession,
     appDetails: {
-      name: 'Friend.stx',
+      name: 'Friends.stx',
       icon: 'src/favicon.svg'
     },
     onFinish: (data: FinishedAuthData) => {
       // Handle successful authentication here
       const userData = data.userSession.loadUserData();
-      setAddress(userData.profile.stxAddress.mainnet); // or .testnet for testnet
+      setAddress(userData.profile.stxAddress.devnet); // or .testnet for testnet
     },
     onCancel: () => {
       // Handle authentication cancellation here
@@ -53,27 +81,42 @@ function App(): ReactElement {
     redirectTo: '/'
   };
 
-  const checkIsKeyHolder = async (address: string) => {
-    const senderAddress = 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM';
-    const contractAddress = 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM';
+
+  const buyKeys = async (address: string, amount: number) => {
+    const network = new StacksDevnet();
+    const result = await makeContractCall({
+      network,
+      contractAddress: CONTRACT_ADDRESS,
+      contractName: 'keys',
+      functionName: 'buy-keys',
+      functionArgs: [standardPrincipalCV(address), uintCV(1)],
+      publicKey: getPublicKeyFromPrivate('asdf')
+    });
+    console.log(cvToValue(result));
+    setIsKeyHolder(cvToValue(result));
+  };
+
+  const checkIsKeyHolder = async (address: string): Promise<boolean> => {
     const contractName = 'keys';
     const functionName = 'is-keyholder';
     const network = 'devnet';
 
     const functionArgs = [
-      standardPrincipalCV(senderAddress),
+      standardPrincipalCV(CONTRACT_ADDRESS),
       standardPrincipalCV(address)
     ];
 
     const result = await callReadOnlyFunction({
       network,
-      contractAddress,
+      contractAddress: CONTRACT_ADDRESS,
       contractName,
       functionName,
       functionArgs,
-      senderAddress
+      senderAddress: CONTRACT_ADDRESS
     });
-    setIsKeyHolder(cvToValue(result));
+    const res = cvToValue(result);
+    setIsKeyHolder(res);
+    return res;
   };
 
   const connectWallet = () => {
@@ -87,58 +130,9 @@ function App(): ReactElement {
     }
   };
 
-  const fetchReadOnly = async (senderAddress: string) => {
-    // Define your contract details here
-    const contractAddress = 'SP000000000000000000002Q6VF78';
-    const contractName = 'pox-3';
-    const functionName = 'is-pox-active';
-
-    const functionArgs = [uintCV(10)];
-
-    try {
-      const result = await callReadOnlyFunction({
-        network,
-        contractAddress,
-        contractName,
-        functionName,
-        functionArgs,
-        senderAddress
-      });
-      setHasFetchedReadOnly(true);
-      console.log(cvToValue(result));
-    } catch (error) {
-      console.error('Error fetching read-only function:', error);
-    }
-  };
-
-  const signMessage = () => {
-    if (userSession.isUserSignedIn()) {
-      openSignatureRequestPopup({
-        message,
-        network,
-        onFinish: async ({ publicKey, signature }) => {
-          // Verify the message signature using the verifyMessageSignatureRsv function
-          const verified = verifyMessageSignatureRsv({
-            message,
-            publicKey,
-            signature
-          });
-          if (verified) {
-            // The signature is verified, so now we can check if the user is a keyholder
-            setIsSignatureVerified(true);
-            console.log(
-              'Address derived from public key',
-              getAddressFromPublicKey(publicKey, network.version)
-            );
-          }
-        }
-      });
-    }
-  };
-
   return (
     <div className="flex items-center justify-center min-h-screen">
-      <div className="mx-auto max-w-2xl px-4">
+      <div className="mx-auto px-4">
         <div className="rounded-lg border bg-background p-8">
           <h1 className="mb-2 text-lg font-semibold">Welcome to Friend.stx</h1>
           <div className="mt-4 flex flex-col items-start space-y-2">
@@ -149,8 +143,7 @@ function App(): ReactElement {
                   variant="link"
                   className="h-auto p-0 text-base"
                 >
-                  1. Disconnect wallet
-                  <ArrowRight size={15} className="ml-1" />
+                  Disconnect wallet
                 </Button>
                 {address && <span>{truncateAddress(address)}</span>}
               </div>
@@ -160,16 +153,18 @@ function App(): ReactElement {
                 variant="link"
                 className="h-auto p-0 text-base"
               >
-                1. Connect your wallet
+                Connect your wallet
                 <ArrowRight size={15} className="ml-1" />
               </Button>
             )}
             {userSession.isUserSignedIn() && (
               <div>
-                <p>
-                  {address} is {isKeyHolder ? '' : 'not'} a key holder
-                </p>
-                <div>
+                {address && (
+                  <p>
+                    {truncateAddress(address)} is {isKeyHolder ? '' : 'not'} a key holder
+                  </p>
+                )}
+                <div className='py-4'>
                   <Input
                     type="text"
                     id="address"
@@ -178,12 +173,14 @@ function App(): ReactElement {
                     onChange={(e) => setAddress(e.target.value)}
                     placeholder="Enter address"
                   />
-                  <button onClick={() => checkIsKeyHolder(address)}>
+                  <Button onClick={() => checkIsKeyHolder(address)}>
                     Check Key Holder
-                  </button>
-                  <div>
-                    <p>Key Holder Check Result: {isKeyHolder ? 'Yes' : 'No'}</p>
-                  </div>
+                  </Button>
+                </div>
+                <div className='py-4'>
+                  {address && (<Button onClick={() => buyKeys(address, 1)}>
+                    Buy a key
+                  </Button>)}
                 </div>
               </div>
             )}
