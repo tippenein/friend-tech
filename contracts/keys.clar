@@ -6,6 +6,9 @@
 
 (define-constant ERR_NOT_CONTRACT_OWNER (err u6000))
 (define-constant ERR_INVALID_FEE_PERCENT (err u6001))
+(define-constant ERR_OVERBUY (err u6002))
+(define-constant ERR_NO_SUPPLY (err u6003))
+(define-constant ERR_TRANSFER_FAIL (err u6004))
 (define-map keysBalance { subject: principal, holder: principal } uint)
 (define-map keysSupply { subject: principal } uint)
 
@@ -22,6 +25,7 @@
     (+ base-price (* amount (/ (* adjusted-supply adjusted-supply) price-change-factor)))
   )
 )
+
 (define-public (buy-keys (subject principal) (amount uint))
   (let
     (
@@ -40,13 +44,15 @@
             (ok true)
           )
           error
-          (err u2)
+          ERR_TRANSFER_FAIL
         )
       )
-      (err u1)
+      ERR_NO_SUPPLY
     )
   )
 )
+
+
 (define-public (sell-keys (subject principal) (amount uint))
   (let
     (
@@ -73,7 +79,7 @@
   )
 )
 (define-read-only (is-keyholder (subject principal) (holder principal))
-  (>= (default-to u0 (map-get? keysBalance { subject: subject, holder: holder })) u1)
+  (>= (get-keys-balance subject holder) u1)
 )
 (define-read-only (get-keys-balance (subject principal) (holder principal))
   (default-to u0 (map-get? keysBalance { subject: subject, holder: holder }))

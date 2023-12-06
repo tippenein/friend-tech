@@ -1,43 +1,16 @@
-name: UI CI
+name: Friend.stx CI
 
 on:
-  pull_request:
-    branches:
-      - main
   push:
-    branches:
-      - main
+    branches: ['main']
+  pull_request:
+    branches: ['main']
 
 jobs:
-  lint:
-    runs-on: ubuntu-22.04
-    name: Lint
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-      - run: yarn
-      - run: yarn lint
   build:
-    runs-on: ubuntu-22.04
-    needs: lint
-    name: Build
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-      - run: yarn
-      - run: yarn build
-  test:
-    runs-on: ubuntu-22.04
-    needs: build
-    name: Test
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-      - run: yarn
-      - run: yarn test
+      - uses: oven-sh/setup-bun@v1
+      - run: bun install
+      - run: bun run test:report
