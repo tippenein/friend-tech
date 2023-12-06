@@ -39,7 +39,7 @@ function App(): ReactElement {
   const authOptions = {
     userSession,
     appDetails: {
-      name: 'Friend.tech',
+      name: 'Friend.stx',
       icon: 'src/favicon.svg'
     },
     onFinish: (data: FinishedAuthData) => {
@@ -140,9 +140,7 @@ function App(): ReactElement {
     <div className="flex items-center justify-center min-h-screen">
       <div className="mx-auto max-w-2xl px-4">
         <div className="rounded-lg border bg-background p-8">
-          <h1 className="mb-2 text-lg font-semibold">
-            Welcome to Friend.tech!
-          </h1>
+          <h1 className="mb-2 text-lg font-semibold">Welcome to Friend.stx</h1>
           <div className="mt-4 flex flex-col items-start space-y-2">
             {userSession.isUserSignedIn() ? (
               <div className="flex justify-between w-full">
@@ -166,48 +164,6 @@ function App(): ReactElement {
                 <ArrowRight size={15} className="ml-1" />
               </Button>
             )}
-            <div className="flex justify-between w-full">
-              <Button
-                onClick={signMessage}
-                variant="link"
-                className="h-auto p-0 text-base text-neutral-500"
-              >
-                2. Sign a message
-                <ArrowRight size={15} className="ml-1" />
-              </Button>
-              {isSignatureVerified && <span>{message}</span>}
-            </div>
-
-            {userSession.isUserSignedIn() ? (
-              <div className="flex justify-between w-full">
-                <Button
-                  onClick={() => fetchReadOnly(address)}
-                  variant="link"
-                  className="h-auto p-0 text-base"
-                >
-                  3. Read from a smart contract
-                  <ArrowRight size={15} className="ml-1" />
-                </Button>
-                {hasFetchedReadOnly && (
-                  <span>
-                    <Badge className="text-orange-500 bg-orange-100">
-                      Success
-                    </Badge>
-                  </span>
-                )}
-              </div>
-            ) : (
-              <div className="flex justify-between w-full">
-                <Button
-                  variant="link"
-                  className="disabled h-auto p-0 text-base"
-                >
-                  3. Read from a smart contract
-                  <ArrowRight size={15} className="ml-1" />
-                </Button>
-              </div>
-            )}
-
             {userSession.isUserSignedIn() && (
               <div>
                 <p>
@@ -218,6 +174,7 @@ function App(): ReactElement {
                     type="text"
                     id="address"
                     name="address"
+                    value={address}
                     onChange={(e) => setAddress(e.target.value)}
                     placeholder="Enter address"
                   />
