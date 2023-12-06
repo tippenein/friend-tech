@@ -19,7 +19,6 @@ import { verifyMessageSignatureRsv } from '@stacks/encryption';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { ExternalLink } from './external-link';
 import { ArrowRight } from 'lucide-react';
 import { truncateAddress } from './lib/utils';
 
@@ -66,7 +65,7 @@ function App(): ReactElement {
       standardPrincipalCV(address)
     ];
 
-    await callReadOnlyFunction({
+    const result = await callReadOnlyFunction({
       network,
       contractAddress,
       contractName,
@@ -74,7 +73,9 @@ function App(): ReactElement {
       functionArgs,
       senderAddress
     });
+    setIsKeyHolder(cvToValue(result));
   };
+
   const connectWallet = () => {
     showConnect(authOptions);
   };
@@ -234,18 +235,6 @@ function App(): ReactElement {
       </div>
     </div>
   );
-
-  // return (
-  //   <div className="text-center">
-  //     <h1 className="text-xl">Friend.tech</h1>
-  //     <div>
-  //       <button onClick={disconnectWallet}>Disconnect Wallet</button>
-  //     </div>
-  //     <div>
-  //       Sign this message: <button onClick={signMessage}>Sign</button>
-  //     </div>
-  //   </div>
-  // );
 }
 
 export default App;

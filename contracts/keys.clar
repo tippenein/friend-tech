@@ -104,7 +104,7 @@
 (define-public (set-protocol-fee-percent (feePercent uint))
   (begin
     (asserts! (> feePercent u0) ERR_INVALID_FEE_PERCENT)
-    (if (is-eq tx-sender tx-sender)
+    (if (is-eq contract-caller tx-sender)
       (ok (var-set protocolFeePercent feePercent))
       ERR_NOT_CONTRACT_OWNER
     )
